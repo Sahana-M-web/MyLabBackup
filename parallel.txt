@@ -1,0 +1,57 @@
+//open mpi
+
+sudo apt update
+sudo apt install -y gcc build-essential
+sudo apt install -y openmpi-bin libopenmpi-dev
+mkdir -p ~/openmp_lab
+cd ~/openmp_lab
+
+nano file
+
+
+#include <stdio.h>
+#include <omp.h>
+
+int main() {
+    int sum = 0;
+
+    #pragma omp parallel for reduction(+:sum)
+    for (int i = 1; i <= 100; i++) {
+        sum += i;
+    }
+
+    printf("Sum = %d\n", sum);
+    return 0;
+}
+
+
+gcc -fopenmp reduction.c -o reduction
+//opt export OMP_NUM_THREADS=num
+./reduction
+
+
+
+//mpi
+sudo apt update
+sudo apt install -y python3 python3-mpi4py openmpi-bin libopenmpi-dev
+mpirun --version
+mkdir -p ~/mpi_lab
+cd ~/mpi_lab
+
+nano mpi_hello.py
+
+
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+print("Hello from process", rank,
+      "out of", size, "processes")
+
+
+mpirun --allow-run-as-root -np 4 python3 mpi_hello.py
+
+mpirun -np 4 python3 mpi_hello.py
