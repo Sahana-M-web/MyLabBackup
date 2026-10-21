@@ -10,11 +10,11 @@ inside public create index.html
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Save Data</title>
+  <title>CRUD</title>
 </head>
 <body>
   <h2>Enter something</h2>
-  <input type="text" id="text" placeholder="Type here">
+  <input type="text" id="text">
   <button onclick="save()">Save</button>
 
   <h3>Saved items</h3>
@@ -33,6 +33,22 @@ inside public create index.html
       load();
     }
 
+    async function edit(id, oldText) {
+      const newText = prompt('Edit:', oldText);
+      if (!newText) return;
+      await fetch('/api/entries/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: newText })
+      });
+      load();
+    }
+
+    async function del(id) {
+      await fetch('/api/entries/' + id, { method: 'DELETE' });
+      load();
+    }
+
     async function load() {
       const res = await fetch('/api/entries');
       const data = await res.json();
@@ -40,7 +56,17 @@ inside public create index.html
       list.innerHTML = '';
       data.forEach(e => {
         const li = document.createElement('li');
-        li.textContent = e.text;
+        li.textContent = e.text + ' ';
+
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.onclick = () => edit(e._id, e.text);
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.onclick = () => del(e._id);
+
+        li.append(editBtn, delBtn);
         list.appendChild(li);
       });
     }
@@ -85,6 +111,15 @@ app.post('/api/entries', async (req, res) => {
 app.get('/api/entries', async (req, res) => {
   const entries = await Entry.find().sort({ createdAt: -1 });
   res.json(entries);
+});
+
+app.put('/api/entries/:id', async (req, res) => {          // update
+  res.json(await Entry.findByIdAndUpdate(req.params.id, { text: req.body.text }, { new: true }));
+});
+
+app.delete('/api/entries/:id', async (req, res) => {       // delete
+  await Entry.findByIdAndDelete(req.params.id);
+  res.json({ message: 'deleted' });
 });
 
 const PORT = process.env.PORT || 3000;
