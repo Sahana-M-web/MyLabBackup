@@ -1,172 +1,195 @@
-npx create-react-app friendly-chat
-cd friendly-chat
-npm install firebase
-npm start
+in firebase console add project register it enable auth and create db and go to firestore rules add this 
 
-
-do in console
-Inside src create firebase.js 
-
-import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import { getStorage } from "firebase/storage";
-
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
-};
-
-const app = initializeApp(firebaseConfig);
-
-export const auth = getAuth(app);
-export const provider = new GoogleAuthProvider();
-export const db = getFirestore(app);
-export const storage = getStorage(app);
-
-
-
-app.js
-import React, { useState, useEffect } from "react";
-import {
-  signInWithPopup,
-  signOut,
-  onAuthStateChanged
-} from "firebase/auth";
-
-import {
-  collection,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  serverTimestamp
-} from "firebase/firestore";
-
-import { auth, provider, db } from "./firebase";
-import "./App.css";
-
-function App() {
-  const [user, setUser] = useState(null);
-  const [message, setMessage] = useState("");
-  const [messages, setMessages] = useState([]);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    const q = query(
-      collection(db, "messages"),
-      orderBy("createdAt", "asc")
-    );
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        setMessages(
-          snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data()
-          }))
-        );
-      },
-      (error) => console.error("Message loading error:", error)
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  const login = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error(error);
-      alert("Login failed. Check Firebase Authentication settings.");
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /notes/{noteId} {
+      allow read, delete: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
     }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const sendMessage = async () => {
-    if (!message.trim() || !user) return;
-
-    try {
-      await addDoc(collection(db, "messages"), {
-        text: message.trim(),
-        name: user.displayName || "User",
-        uid: user.uid,
-        createdAt: serverTimestamp()
-      });
-
-      setMessage("");
-    } catch (error) {
-      console.error(error);
-      alert("Message could not be sent. Check Firestore settings.");
-    }
-  };
-
-  return (
-    <div className="app">
-      <div className="chat-container">
-        <h1>Friendly Chat 💬</h1>
-
-        {!user ? (
-          <div className="login-section">
-            <p>Welcome to Friendly Chat!</p>
-            <button onClick={login}>Login with Google</button>
-          </div>
-        ) : (
-          <>
-            <div className="user-section">
-              <span>Welcome, {user.displayName}</span>
-              <button onClick={logout}>Logout</button>
-            </div>
-
-            <div className="chat-box">
-              {messages.map((msg) => (
-                <div className="chat-message" key={msg.id}>
-                  <strong>{msg.name}</strong>
-                  <p>{msg.text}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="message-box">
-              <input
-                type="text"
-                placeholder="Type a message..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") sendMessage();
-                }}
-              />
-
-              <button onClick={sendMessage}>Send</button>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
+  }
 }
 
-export default App;
+
+now create a my-app folder - public - index.html 
+
+open terminal and run 
+
+npm install -g firebase-tools
+firebase login
+firebase init hosting 
 
 
-npm start
+finally 
+firebase deploy
+
+A URL will given open this 
+
+
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Firebase Notes: Auth + Firestore + Hosting</title>
+<style>
+  :root { --bg:#f5f7fa; --card:#fff; --ink:#1d2433; --muted:#6b7385; --accent:#2563eb; --danger:#c0392b; --line:#e2e6ee; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width: 520px; margin: 40px auto; padding: 0 16px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:16px; }
+  h1 { font-size:1.4rem; margin:0 0 4px; }
+  p.sub { margin:0 0 16px; color:var(--muted); font-size:.9rem; }
+  input { width:100%; padding:10px; margin-bottom:8px; border:1px solid var(--line); border-radius:6px; font-size:1rem; }
+  button { padding:10px 14px; border:0; border-radius:6px; background:var(--accent); color:#fff; font-size:.95rem; cursor:pointer; }
+  button.alt { background:#eef1f7; color:var(--ink); }
+  button.del { background:transparent; color:var(--danger); padding:4px 8px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; }
+  .note { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+  .note:last-child { border-bottom:0; }
+  #msg { color:var(--danger); font-size:.9rem; min-height:1.2em; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- LOGIN VIEW (Firebase Authentication) -->
+  <section id="authView" class="card">
+    <h1>Sign in</h1>
+    <p class="sub">Create an account or sign in to see your notes.</p>
+    <input id="email" type="email" placeholder="Email" autocomplete="email">
+    <input id="password" type="password" placeholder="Password (min 6 characters)" autocomplete="current-password">
+    <div class="row">
+      <button id="loginBtn">Sign in</button>
+      <button id="signupBtn" class="alt">Create account</button>
+      <button id="googleBtn" class="alt">Continue with Google</button>
+    </div>
+    <p id="msg"></p>
+  </section>
+
+  <!-- APP VIEW (Cloud Firestore) -->
+  <section id="appView" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>
+          <h1>My notes</h1>
+          <p class="sub" id="who" style="margin:0"></p>
+        </div>
+        <button id="logoutBtn" class="alt">Sign out</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="row">
+        <input id="noteText" placeholder="Write a note" style="flex:1;margin:0">
+        <button id="addBtn">Save note</button>
+      </div>
+    </div>
+    <div class="card" id="notesList">No notes yet. Add your first one above.</div>
+  </section>
+
+</main>
+
+<script type="module">
+  // 1. IMPORT FIREBASE (modular SDK from Google's CDN)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import {
+    getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
+    signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, deleteDoc, doc, query, where,
+    orderBy, onSnapshot, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD0ukEFxAdO2ISxiBUZc648ZKn1ucPULHw",
+  authDomain: "sahana-ram.firebaseapp.com",
+  projectId: "sahana-ram",
+  storageBucket: "sahana-ram.firebasestorage.app",
+  messagingSenderId: "958636582430",
+  appId: "1:958636582430:web:4bfa5b7ae7010b773eb00f",
+  measurementId: "G-ZMDN565ZBF"
+};
+
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getFirestore(app);
+
+  const $ = (id) => document.getElementById(id);
+  const showError = (e) => { $("msg").textContent = e.message.replace("Firebase: ", ""); };
+  let unsubscribeNotes = null;
+
+  // 3. AUTHENTICATION
+  $("signupBtn").onclick = () =>
+    createUserWithEmailAndPassword(auth, $("email").value, $("password").value).catch(showError);
+
+  $("loginBtn").onclick = () =>
+    signInWithEmailAndPassword(auth, $("email").value, $("password").value).catch(showError);
+
+  $("googleBtn").onclick = () =>
+    signInWithPopup(auth, new GoogleAuthProvider()).catch(showError);
+
+  $("logoutBtn").onclick = () => signOut(auth);
+
+  // Runs on page load and whenever the user signs in or out
+  onAuthStateChanged(auth, (user) => {
+    $("authView").classList.toggle("hidden", !!user);
+    $("appView").classList.toggle("hidden", !user);
+    $("msg").textContent = "";
+
+    if (unsubscribeNotes) { unsubscribeNotes(); unsubscribeNotes = null; }
+
+    if (user) {
+      $("who").textContent = user.email;
+      listenToNotes(user.uid);
+    }
+  });
+
+  // 4. FIRESTORE: CREATE
+  $("addBtn").onclick = async () => {
+    const text = $("noteText").value.trim();
+    if (!text || !auth.currentUser) return;
+    await addDoc(collection(db, "notes"), {
+      uid: auth.currentUser.uid,
+      text,
+      createdAt: serverTimestamp()
+    });
+    $("noteText").value = "";
+  };
+
+  // FIRESTORE: READ (real-time, only the signed-in user's notes)
+  // First run: Firestore will log a link in the console to create the index
+  // needed for where() + orderBy(). Click it once.
+  function listenToNotes(uid) {
+    const q = query(collection(db, "notes"), where("uid", "==", uid), orderBy("createdAt", "desc"));
+    unsubscribeNotes = onSnapshot(q, (snap) => {
+      const list = $("notesList");
+      if (snap.empty) { list.textContent = "No notes yet. Add your first one above."; return; }
+      list.innerHTML = "";
+      snap.forEach((d) => {
+        const row = document.createElement("div");
+        row.className = "note";
+        const span = document.createElement("span");
+        span.textContent = d.data().text;           // textContent avoids XSS
+        const del = document.createElement("button");
+        del.className = "del";
+        del.textContent = "Delete";
+        // FIRESTORE: DELETE
+        del.onclick = () => deleteDoc(doc(db, "notes", d.id));
+        row.append(span, del);
+        list.append(row);
+      });
+    }, showError);
+  }
+</script>
+</body>
+</html>
