@@ -21,6 +21,7 @@ inside public create index.html
   <ul id="list"></ul>
 
   <script>
+    // CREATE
     async function save() {
       const input = document.getElementById('text');
       if (!input.value) return;
@@ -33,6 +34,7 @@ inside public create index.html
       load();
     }
 
+    // UPDATE
     async function edit(id, oldText) {
       const newText = prompt('Edit:', oldText);
       if (!newText) return;
@@ -44,11 +46,13 @@ inside public create index.html
       load();
     }
 
+    // DELETE
     async function del(id) {
       await fetch('/api/entries/' + id, { method: 'DELETE' });
       load();
     }
 
+    // READ
     async function load() {
       const res = await fetch('/api/entries');
       const data = await res.json();
@@ -76,7 +80,11 @@ inside public create index.html
 </body>
 </html>
 
+
 server
+
+const dns = require('dns');
+dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const dns = require('dns');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
@@ -91,40 +99,37 @@ const app = express();
 app.use(express.json());
 app.use(express.static('public'));
 
-mongoose
-  .connect(process.env.MONGODB_URI)
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-const Entry = mongoose.model(
-  'Entry',
-  new mongoose.Schema({ text: String }, { timestamps: true })
-);
+const Entry = mongoose.model('Entry',
+  new mongoose.Schema({ text: String }, { timestamps: true }));
 
-// save input
+// CREATE
 app.post('/api/entries', async (req, res) => {
-  const entry = await Entry.create({ text: req.body.text });
-  res.json(entry);
+  res.json(await Entry.create({ text: req.body.text }));
 });
 
-// get all saved inputs
+// READ
 app.get('/api/entries', async (req, res) => {
-  const entries = await Entry.find().sort({ createdAt: -1 });
-  res.json(entries);
+  res.json(await Entry.find().sort({ createdAt: -1 }));
 });
 
-app.put('/api/entries/:id', async (req, res) => {          // update
-  res.json(await Entry.findByIdAndUpdate(req.params.id, { text: req.body.text }, { new: true }));
+// UPDATE
+app.put('/api/entries/:id', async (req, res) => {
+  res.json(await Entry.findByIdAndUpdate(
+    req.params.id, { text: req.body.text }, { new: true }));
 });
 
-app.delete('/api/entries/:id', async (req, res) => {       // delete
+// DELETE
+app.delete('/api/entries/:id', async (req, res) => {
   await Entry.findByIdAndDelete(req.params.id);
   res.json({ message: 'deleted' });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
 
 env 
 
